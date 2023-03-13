@@ -1,0 +1,33 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'windows-latest'
+
+variables:
+  synapseServer: '<synapse-server-name>.sql.azuresynapse.net'
+  databaseName: '<database-name>'
+  dacpacFileName: '<dacpac-file-name>.dacpac'
+
+steps:
+- task: AzureSynapseAnalyticsSqlPool@0
+  displayName: 'Connect to Synapse Dedicated Pool'
+  inputs:
+    azureSubscription: '<azure-subscription>'
+    serverName: $(synapseServer)
+    authenticationType: 'Azure Active Directory - Integrated'
+
+- task: SqlPackage@2
+  displayName: 'Build DACPAC file'
+  inputs:
+    action: 'Export'
+    sqlScript: '$(databaseName)'
+    targetFile: '$(Build.ArtifactStagingDirectory)/$(dacpacFileName)'
+    deployType: 'None'
+    additionalArguments: '/p:RegisterDataTierApplication=True'
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish DACPAC file'
+  inputs:
+    artifactName: 'dacpac'
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
